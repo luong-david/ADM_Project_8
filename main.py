@@ -25,6 +25,13 @@ from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.datasets import make_blobs
 from sklearn.preprocessing import StandardScaler
+# Import recommenders
+import content_recommender
+import collaborative_filtering_item as cf_item
+import collaborative_filtering_user as cf_user
+import latent_factor_model
+import svd4rec
+import clustering
  
 # Open JSON file
 restaurant_data = open('yelp_dataset/TX_restaurants.json')
@@ -40,3 +47,9 @@ reviews = json.load(review_data)
 print('Total number of reviews in dataset: ', len(reviews))
 
 # Advanced Data Mining Studies
+content_recommender.recommend
+cf_item.recommend
+cf_user.recommend
+latent_factor_model.recommend
+svd4rec.recommend
+clustering.recommend
