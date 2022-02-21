@@ -47,9 +47,9 @@ reviews = json.load(review_data)
 print('Total number of reviews in dataset: ', len(reviews))
 
 # Advanced Data Mining Studies
-content_recommender.recommend
-cf_item.recommend
-cf_user.recommend
-latent_factor_model.recommend
-svd4rec.recommend
-clustering.recommend
+x1 = content_recommender.recommend(users,restaurants,reviews)
+x2 = cf_item.recommend(users,restaurants,reviews)
+x3 = cf_user.recommend(users,restaurants,reviews)
+x4 = latent_factor_model.recommend(users,restaurants,reviews)
+x5 = svd4rec.recommend(users,restaurants,reviews)
+x6 = clustering.recommend(users,restaurants,reviews)

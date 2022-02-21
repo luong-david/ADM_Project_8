@@ -1,3 +1,3 @@
 def recommend(users,restaurants,reviews):
     # code
-    return
+    return users[0]
