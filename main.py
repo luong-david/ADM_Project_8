@@ -25,53 +25,18 @@ from sklearn.cluster import DBSCAN
 from sklearn import metrics
 from sklearn.datasets import make_blobs
 from sklearn.preprocessing import StandardScaler
-
-business = 1
-cluster = 1
-classify = 0
-checkin = 0
-tip = 0
-user = 0
-review = 0
  
-# Open JSON file (MemoryError for user and review)
-if business:
-    business_data = [json.loads(line) for line in open('yelp_dataset/yelp_academic_dataset_business.json', 'r',encoding="utf8")]
-if checkin:
-    checkin_data = [json.loads(line) for line in open('yelp_dataset/yelp_academic_dataset_checkin.json', 'r',encoding="utf8")]
-if tip:
-    tip_data = [json.loads(line) for line in open('yelp_dataset/yelp_academic_dataset_tip.json', 'r',encoding="utf8")]
-if user:
-    user_data = [json.loads(line) for line in open('yelp_academic_dataset_user.json', 'r',encoding="utf8")]
-if review:
-    review_data = [json.loads(line) for line in open('yelp_academic_dataset_review.json', 'r',encoding="utf8")] 
+# Open JSON file
+restaurant_data = open('yelp_dataset/TX_restaurants.json')
+restaurants = json.load(restaurant_data)
+print('Total number of restaurants in dataset: ', len(restaurants))
 
-if business:
-    # Split into restaurants, bars and things
-    restaurants = []
-    bars = []
-    other = []
-    for raw_dict in business_data:
-        appended = False
-        if raw_dict['categories'] != None:
-    	    if 'restaurants' in raw_dict['categories'] or 'Restaurants' in raw_dict['categories']:
-    		    restaurants.append(raw_dict)
-    		    appended = True
-    	    if 'bars' in raw_dict['categories'] or 'Bars' in raw_dict['categories']:
-    		    bars.append(raw_dict)
-    		    appended = True
-    	    if not appended:
-    		    other.append(raw_dict)
-    print('Total number of restaurants in dataset: ', len(restaurants))
-    print('Total number of bars in dataset: ', len(bars))
-    print('Total number of other businesses in dataset: ', len(other))
-    
-if tip:
-    tips = []
-    # filter out tips that are less than 8 words long
-    for raw_dict in tip_data:
-        if len(raw_dict['text'].split()) > 8:
-            tips.append(raw_dict)
-    print('Total number of tips in dataset: ', len(tips))
+user_data = open('yelp_dataset/TX_users.json')
+users = json.load(user_data)
+print('Total number of users in dataset: ', len(users))
+
+review_data = open('yelp_dataset/TX_reviews.json')
+reviews = json.load(review_data)
+print('Total number of reviews in dataset: ', len(reviews))
 
 # Advanced Data Mining Studies
