@@ -46,8 +46,18 @@ review_data = open('yelp_dataset/TX_reviews.json')
 reviews = json.load(review_data)
 print('Total number of reviews in dataset: ', len(reviews))
 
+# Get user profile
+uid = input("Enter your user id (use 0 for test user or -1 for random): ")
+if uid == '0':
+    uid = '-OGWTHZng0QNhvc8dhIjyQ'
+elif uid == '-1':
+    uid = users[random.randrange(0,len(users))]['user_id']
+else:
+    print('Invalid user id')
+print('Your user id is ' + uid)
+
 # Advanced Data Mining Studies
-likes,neutral,dislikes,picks,dispicks,user_profile,att_list = content_recommender.recommend(users,restaurants,reviews)
+likes,neutral,dislikes,picks,dispicks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,restaurants,reviews)
 print('User likes: ' + str(likes))
 print('User dislikes: ' + str(dislikes))
 #print('User indifferent ' + str(neutral))
@@ -55,8 +65,10 @@ print('Top k: ')
 print(picks)
 print('Last k: ')
 print(dispicks)
-print(att_list)
-print(user_profile)
+print('You prefer: ')
+print(att_plus)
+print('You don\'t care for: ')
+print(att_minus)
 x2 = cf_item.recommend(users,restaurants,reviews)
 x3 = cf_user.recommend(users,restaurants,reviews)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)

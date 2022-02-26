@@ -17,9 +17,9 @@ def checkKey(dict, key):
     else:
         return 0
 
-def recommend(users,restaurants,reviews):
+def recommend(uid,restaurants,reviews):
 
-    k = 10
+    k = 3
 
     # remove restaurants without any attributes
     for i,restaurant in enumerate(restaurants):
@@ -39,6 +39,8 @@ def recommend(users,restaurants,reviews):
     nRestaurants = len(restaurants)
     mat = csr_matrix((nRestaurants,nFeatures),
                   dtype = 'f').toarray()
+    mat_norm = csr_matrix((nRestaurants,nFeatures),
+                  dtype = 'f').toarray()
     for nR, restaurant in enumerate(restaurants):
         for idx, att in enumerate(att_list):
             mat[nR][idx] = checkKey(restaurants[nR]['attributes'],att)
@@ -47,23 +49,41 @@ def recommend(users,restaurants,reviews):
     for i,row in enumerate(mat):
         if sum(row) == 0:
             continue
-        mat[i,:]/=float(np.sqrt(sum(row)))
+        mat_norm[i,:] = mat[i,:]/float(np.sqrt(sum(row)))
 
-    # build user profile from item profile (use random for now)
+    # build user profile from item profile
     # 1. Using review data, find restaurants each user has rated (4-5 stars = +1, 1-3 stars = -1, else 0)
-    user = np.random.choice([-1.0,0.0,1.0], size=(1,nRestaurants))
-    user_profile = np.dot(user[0],mat)
+    bid = []
+    bstars = []
+    user_rated = []
+    for rev in reviews:
+        if rev['user_id'] == uid:
+            bid.append(rev['business_id'])
+            bstars.append(float(rev['stars']))
+    for nR, restaurant in enumerate(restaurants):
+        if restaurant['business_id'] in bid:
+            idx = bid.index(restaurant['business_id'])
+            if bstars[idx] > 3:
+                user_rated.append(1.0)
+            elif bstars[idx] <= 3:
+                user_rated.append(-1.0)
+            else:
+                user_rated.append(0.0)
+        else:
+            user_rated.append(0.0)
+    user = np.array(user_rated)
+    # generate user profile from user ratings
+    user_profile = np.dot(user,mat_norm)
 
     # find similar restaurants to user profile (LSH)
-    # 1. LSH to find similar restaurants and put into buckets
-    # 2. Compute similarity between buckets (choose random restaurant) and user profile
-    # 3. Using the most similar bucket, compute similarity for every restaurant in bucket with user profile
-    # 4. Recommend top-k restaurants
+    # 1. Create signature matrix with user profile and item profile
+    # 2. Compute similarity between candidate pairs in the bucket containing the user profile
+    # 3. Recommend top-k restaurants
 
-    # For now since nRestaurants is small, compute similarity between all restaurants.
+    # For now since nRestaurants is small, compute similarity between user profile and all restaurants.
     sim = []
     for i,nR in enumerate(range(nRestaurants)):
-        sim.append((i,np.dot(user_profile,mat[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat[nR,:],ord=2)))
+        sim.append((i,np.dot(user_profile,mat_norm[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat_norm[nR,:],ord=2)))
     sim.sort(key=lambda x:x[1],reverse=True)
 
     # recommend top-k and bottom-k restaurants (and restaurants user has previously rated...k of each rating)
@@ -75,9 +95,9 @@ def recommend(users,restaurants,reviews):
     for i,item in enumerate(sim):
         if i < k:
             picks.append(restaurants[item[0]]['name'])
-        if i > nRestaurants-k:
+        if i > nRestaurants-(k+1):
             dispicks.append(restaurants[item[0]]['name'])
-    for i,item in enumerate(user[0]):
+    for i,item in enumerate(user):
         if item == 1.0:
             likes.append(restaurants[i]['name'])
         elif item == 0.0:
@@ -85,4 +105,13 @@ def recommend(users,restaurants,reviews):
         else:
             dislikes.append(restaurants[i]['name'])
 
-    return likes[0:k+1],neutral[0:k+1],dislikes[0:k+1],picks,dispicks, user_profile, att_list
+    # get user's attributes
+    att_plus = []
+    att_minus = []
+    for i,val in enumerate(user_profile):
+        if val > 0:
+            att_plus.append(list(att_list)[i])
+        else:
+            att_minus.append(list(att_list)[i])
+
+    return likes[0:k],neutral[0:k],dislikes[0:k],picks,dispicks, user_profile, att_plus, att_minus
