@@ -5,6 +5,7 @@ import numpy as np
 import random
 from random import randint
 from itertools import combinations
+import csv
 
 # Python3 Program to check whether a 
 # given key already exists in a dictionary.
@@ -152,7 +153,7 @@ def LSH(users,restaurants,reviews):
 
     return buckets
 
-def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews):
+def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv):
 
     # ensure correct types
     k = int(top_k) # top-k recs
@@ -237,9 +238,9 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews):
     neutral = []
     for i,item in enumerate(sim):
         if i < k:
-            picks.append(restaurants[item[0]]['name'])
+            picks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
         if i > len(cand_pairs)-(k+1):
-            dispicks.append(restaurants[item[0]]['name'])
+            dispicks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
     for i,item in enumerate(user):
         if item == 1.0:
             likes.append(restaurants[i]['name'])
@@ -259,10 +260,34 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews):
 
     extra_picks = []
     if extra_recs:
-        for kk in range(k):
+        for kk in range(min(k,len(cand_pairs))):
             if sim[kk][0] in cand_pairs:
-                extra_picks.append(restaurants[buckets[sim[kk][0]][0]]['name'])
+                extra_picks.append([restaurants[buckets[sim[kk][0]][0]]['name'] + ' on ' + restaurants[buckets[sim[kk][0]][0]]['address'],sim[kk][1]])
     # remove duplicates
-    extra_picks = set(extra_picks)
+    temp = []
+    for elem in extra_picks:
+        if elem not in temp:
+            temp.append(elem)
+    extra_picks = temp
 
-    return likes[0:k], neutral[0:k], dislikes[0:k], picks, dispicks, extra_picks, user_profile, att_plus, att_minus
+    if write2csv:
+    # writing to csv file
+        if quick_rec:
+            tag = 'quick'
+        else:
+            tag = 'full'
+        outvar = [picks,dispicks]
+        outname = ['picks','dispicks']
+        # field names
+        fields = ['Restaurant','Similarity Score']
+        for i,out in enumerate(outvar):
+            output_file_path = 'content_based_recommender_' + str(outname[i]) + '_' + tag + '.csv'
+            with open(output_file_path,'w', encoding='UTF8', newline='') as csvfile:
+                # creating a csv writer object
+                csvwriter = csv.writer(csvfile)
+                # writing the fields
+                csvwriter.writerow(fields)
+                # writing the data rows
+                csvwriter.writerows(out)
+
+    return likes, neutral, dislikes, picks, dispicks, extra_picks, user_profile, att_plus, att_minus

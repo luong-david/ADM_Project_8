@@ -74,20 +74,24 @@ while 1:
         print('Invalid user id...try again')
         uid = get_user_information()
 
-quick_rec = input("Enter 1 for quick recommendation, otherwise will examine all restaurants: ")
+quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
+while quick_rec != '1' and quick_rec != '0':
+    quick_rec = input("I did not understand your input, enter 1 for quick recommendation, 0 to examine all restaurants: ")
 top_k = input("How many recs do you want? ")
 if int(quick_rec):
     extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
-    while 1:
+    while extra_recs != '1' and extra_recs != '0':
         extra_recs = input('I did not understand your input, may I suggest more recs for you similar to the top-k? (1=yes,0=no) ')
-        if extra_recs == '1' or extra_recs == '0':
-            break
+else:
+    extra_recs = 0
+
+# Outputs
+write2csv = 1
 
 # Advanced Data Mining Studies
-likes,neutral,dislikes,picks,dispicks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews)
+likes,neutral,dislikes,picks,dispicks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv)
 print('You liked: ' + str(likes))
 print('You disliked: ' + str(dislikes))
-#print('User indifferent ' + str(neutral))
 print('Your Top k: ')
 print(picks)
 print('Your Extra Quick Picks: ')
