@@ -262,5 +262,7 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews):
         for kk in range(k):
             if sim[kk][0] in cand_pairs:
                 extra_picks.append(restaurants[buckets[sim[kk][0]][0]]['name'])
+    # remove duplicates
+    extra_picks = set(extra_picks)
 
     return likes[0:k], neutral[0:k], dislikes[0:k], picks, dispicks, extra_picks, user_profile, att_plus, att_minus

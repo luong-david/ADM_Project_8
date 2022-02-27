@@ -46,19 +46,42 @@ review_data = open('yelp_dataset/TX_reviews.json')
 reviews = json.load(review_data)
 print('Total number of reviews in dataset: ', len(reviews))
 
-# Get user profile
-uid = input("Enter your user id (use 0 for test user or -1 for random): ")
-if uid == '0':
-    uid = '-OGWTHZng0QNhvc8dhIjyQ'
-elif uid == '-1':
-    uid = users[random.randrange(0,len(users))]['user_id']
-else:
-    print('Invalid user id')
-print('Your user id is ' + uid)
-quick_rec = input("Enter 1 for quick recommendation (LSH), otherwise will examine all restaurants: ")
+def get_user_information():
+    uid = input("Enter your user id (use 0 for test user or -1 for random): ")
+    if uid == '0':
+        uid = '-OGWTHZng0QNhvc8dhIjyQ'
+    elif uid == '-1':
+        uid = users[random.randrange(0,len(users))]['user_id']
+    return uid
+
+# build user and restaurant lists
+user_list = []
+for u in users:
+    user_list.append(u['user_id'])
+rest_list = []
+for r in restaurants:
+    rest_list.append(r['business_id'])
+
+# Get user information
+uid = get_user_information()
+
+# Prompt for user id
+while 1:
+    if uid in user_list:
+        print('Your user id is ' + uid)
+        break
+    else:
+        print('Invalid user id...try again')
+        uid = get_user_information()
+
+quick_rec = input("Enter 1 for quick recommendation, otherwise will examine all restaurants: ")
 top_k = input("How many recs do you want? ")
 if int(quick_rec):
-    extra_recs = input("May I suggest more for you similar to the top-k? (1=yes) ")
+    extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
+    while 1:
+        extra_recs = input('I did not understand your input, may I suggest more recs for you similar to the top-k? (1=yes,0=no) ')
+        if extra_recs == '1' or extra_recs == '0':
+            break
 
 # Advanced Data Mining Studies
 likes,neutral,dislikes,picks,dispicks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews)
