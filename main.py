@@ -104,7 +104,7 @@ print('You don\'t care for these attributes: ')
 print(att_minus)
 
 x2 = cf_item.recommend(users,restaurants,reviews)
-x3 = cf_user.recommend(users,restaurants,reviews)
+x3 = cf_user.recommend(uid,reviews)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)
 x5 = svd4rec.recommend(users,restaurants,reviews)
 x6 = clustering.recommend(users,restaurants,reviews)
