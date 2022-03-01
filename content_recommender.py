@@ -1,11 +1,10 @@
-
-from cmath import nan
 from scipy.sparse import csr_matrix
 import numpy as np
 import random
 from random import randint
 from itertools import combinations
 import csv
+import math
 
 # Python3 Program to check whether a 
 # given key already exists in a dictionary.
@@ -227,20 +226,21 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv
 
     sim = []
     for nR in cand_pairs:
-        sim.append((nR,np.dot(user_profile,mat_norm[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat_norm[nR,:],ord=2)))
+        cos_sim = np.dot(user_profile,mat_norm[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat_norm[nR,:],ord=2)
+        if math.isnan(cos_sim):
+            # Mark restaurants that have all attributes = False
+            cos_sim = -99
+        sim.append((nR,cos_sim))
     sim.sort(key=lambda x:x[1],reverse=True)
 
     # recommend top-k and bottom-k restaurants (and restaurants user has previously rated...k of each rating)
     picks = []
-    dispicks = []
     likes = []
     dislikes = []
     neutral = []
     for i,item in enumerate(sim):
         if i < k:
             picks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
-        if i > len(cand_pairs)-(k+1):
-            dispicks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
     for i,item in enumerate(user):
         if item == 1.0:
             likes.append(restaurants[i]['name'])
@@ -276,18 +276,15 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv
             tag = 'quick'
         else:
             tag = 'full'
-        outvar = [picks,dispicks]
-        outname = ['picks','dispicks']
         # field names
         fields = ['Restaurant','Similarity Score']
-        for i,out in enumerate(outvar):
-            output_file_path = 'content_based_recommender_' + str(outname[i]) + '_' + tag + '.csv'
-            with open(output_file_path,'w', encoding='UTF8', newline='') as csvfile:
-                # creating a csv writer object
-                csvwriter = csv.writer(csvfile)
-                # writing the fields
-                csvwriter.writerow(fields)
-                # writing the data rows
-                csvwriter.writerows(out)
+        output_file_path = 'content_based_recommender_picks_' + tag + '.csv'
+        with open(output_file_path,'w', encoding='UTF8', newline='') as csvfile:
+            # creating a csv writer object
+            csvwriter = csv.writer(csvfile)
+            # writing the fields
+            csvwriter.writerow(fields)
+            # writing the data rows
+            csvwriter.writerows(picks)
 
-    return likes, neutral, dislikes, picks, dispicks, extra_picks, user_profile, att_plus, att_minus
+    return likes, neutral, dislikes, picks, extra_picks, user_profile, att_plus, att_minus

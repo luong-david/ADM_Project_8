@@ -89,7 +89,7 @@ else:
 write2csv = 1
 
 # Advanced Data Mining Studies
-likes,neutral,dislikes,picks,dispicks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv)
+likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv)
 print('You liked: ' + str(likes))
 print('You disliked: ' + str(dislikes))
 print('Your Top k: ')
@@ -97,7 +97,7 @@ print(picks)
 print('Your Extra Quick Picks: ')
 print(extra_picks)
 print('Your Last k: ')
-print(dispicks)
+print(picks[:-int(top_k)-1:-1])
 print('You prefer these attributes: ')
 print(att_plus)
 print('You don\'t care for these attributes: ')
