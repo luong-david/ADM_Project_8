@@ -32,7 +32,7 @@ import collaborative_filtering_user as cf_user
 import latent_factor_model
 import svd4rec
 import clustering
- 
+
 # Open JSON file
 restaurant_data = open('yelp_dataset/TX_restaurants.json')
 restaurants = json.load(restaurant_data)
@@ -46,14 +46,6 @@ review_data = open('yelp_dataset/TX_reviews.json')
 reviews = json.load(review_data)
 print('Total number of reviews in dataset: ', len(reviews))
 
-def get_user_information():
-    uid = input("Enter your user id (use 0 for test user or -1 for random): ")
-    if uid == '0':
-        uid = '-OGWTHZng0QNhvc8dhIjyQ'
-    elif uid == '-1':
-        uid = users[random.randrange(0,len(users))]['user_id']
-    return uid
-
 # build user and restaurant lists
 user_list = []
 for u in users:
@@ -62,47 +54,46 @@ rest_list = []
 for r in restaurants:
     rest_list.append(r['business_id'])
 
-# Get user information
-uid = get_user_information()
-
-# Prompt for user id
-while 1:
-    if uid in user_list:
-        print('Your user id is ' + uid)
-        break
-    else:
-        print('Invalid user id...try again')
-        uid = get_user_information()
-
-quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
-while quick_rec != '1' and quick_rec != '0':
-    quick_rec = input("I did not understand your input, enter 1 for quick recommendation, 0 to examine all restaurants: ")
-top_k = input("How many recs do you want? ")
-if int(quick_rec):
-    extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
-    while extra_recs != '1' and extra_recs != '0':
-        extra_recs = input('I did not understand your input, may I suggest more recs for you similar to the top-k? (1=yes,0=no) ')
-else:
-    extra_recs = 0
-
-# Outputs
-write2csv = 1
+# flags
+runCBrec = 0
 
 # Advanced Data Mining Studies
-likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv)
-print('You liked: ' + str(likes))
-print('You disliked: ' + str(dislikes))
-print('Your Top k: ')
-print(picks)
-print('Your Extra Quick Picks: ')
-print(extra_picks)
-print('Your Last k: ')
-print(picks[:-int(top_k)-1:-1])
-print('You prefer these attributes: ')
-print(att_plus)
-print('You don\'t care for these attributes: ')
-print(att_minus)
 
+if runCBrec:
+    print('====================START CONTENT-BASED RECOMMENDER================================')
+    uid, quick_rec, top_k, extra_recs, minStars, minRev, compute_metrics, write2csv = content_recommender.prompt(user_list)
+    AP,AR, likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
+    print('You liked: ' + str(likes))
+    print('You disliked: ' + str(dislikes))
+    print('Your Top k: ')
+    print(picks)
+    print('Your Extra Quick Picks: ')
+    print(extra_picks)
+    print('Your Last k: ')
+    print(picks[:-int(top_k)-1:-1])
+    print('You prefer these attributes: ')
+    print(att_plus)
+    print('You don\'t care for these attributes: ')
+    print(att_minus)
+    print('Average Precision @ k = ', AP)
+    print('Average Recall @ k = ', AR)
+    if compute_metrics:
+        AP_list = []
+        AR_list = []
+        for i,user in enumerate(user_list):
+            AP,AR,likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(user,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
+            AP_list.append(AP)
+            AR_list.append(AR)
+            print('User ' + str(i+1) + '/' + str(len(user_list)) + ': Average Precision/Recall @ k = ' + str(AP) + '/' + str(AR))
+        print('For ' + str(i+1) + ' out of ' + str(len(user_list)) + ' users: ')
+
+        # Compute metrics
+        MAP = sum(AP_list)/len(AP_list)
+        MAR = sum(AR_list)/len(AR_list)
+        print('MAP = ', MAP)
+        print('MAR = ', MAR)
+        print('MAF1 = ', 2*MAP*MAR/(MAP+MAR))
+    print('====================END CONTENT-BASED RECOMMENDER==================================')
 x2 = cf_item.recommend(users,restaurants,reviews)
 x3 = cf_user.recommend(uid,reviews)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)

@@ -152,7 +152,72 @@ def LSH(users,restaurants,reviews):
 
     return buckets
 
-def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv):
+def evaluate(rel,k,rel_all):
+    # function to compute average precision
+    AP = sum(rel[0:k])/k
+    if sum(rel_all) == 0:
+        AR = 0
+    else:
+        AR = sum(rel[0:k])/sum(rel_all)
+    return AP,AR
+
+def getRelevantRestaurants(restaurants,minStars,minRev):
+    rel = []
+    for rest in restaurants:
+        if float(rest['stars']) >= minStars and int(rest['review_count']) >= minRev:
+            rel.append(1)
+        else:
+            rel.append(0)
+    return rel
+
+def get_user_information():
+    uid = input("Enter your user id (use 0 for test user or -1 for random): ")
+    if uid == '0':
+        uid = '-OGWTHZng0QNhvc8dhIjyQ'
+    elif uid == '-1':
+        uid = users[random.randrange(0,len(users))]['user_id']
+    return uid
+
+def prompt(user_list):
+
+    # Get user information
+    uid = get_user_information()
+
+    # Inputs
+    while 1:
+        if uid in user_list:
+            print('Your user id is ' + uid)
+            break
+        else:
+            print('Invalid user id...try again')
+            uid = get_user_information()
+
+    quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
+    while quick_rec != '1' and quick_rec != '0':
+        quick_rec = input("I did not understand your input, enter 1 for quick recommendation, 0 to examine all restaurants: ")
+    top_k = input("How many recs do you want? ")
+    if int(quick_rec):
+        extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
+        while extra_recs != '1' and extra_recs != '0':
+            extra_recs = input('I did not understand your input, may I suggest more recs for you similar to the top-k? (1=yes,0=no) ')
+    else:
+        extra_recs = 0
+
+    compute_metrics = input("Enter 1 to compute metrics, 0 to skip: ")
+    while compute_metrics != '1' and compute_metrics != '0':
+        compute_metrics = input("I did not understand your input, enter 1 to compute metrics, 0 to skip: ")
+
+    write2csv = input("Enter 1 to write recs to csv, 0 to skip: ")
+    while write2csv != '1' and write2csv != '0':
+        write2csv = input("I did not understand your input, enter 1 to write recs to csv, 0 to skip: ")
+
+    # Relevance criteria
+    minStars = 4.0
+    minRev = 100
+
+    return uid, quick_rec, top_k, extra_recs, minStars, minRev, int(compute_metrics), int(write2csv)
+
+def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv):
 
     # ensure correct types
     k = int(top_k) # top-k recs
@@ -238,9 +303,14 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv
     likes = []
     dislikes = []
     neutral = []
+    rel = []
     for i,item in enumerate(sim):
         if i < k:
             picks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
+        if float(restaurants[item[0]]['stars']) >= minStars and int(restaurants[item[0]]['review_count']) >= minRev:
+            rel.append(1)
+        else:
+            rel.append(0)
     for i,item in enumerate(user):
         if item == 1.0:
             likes.append(restaurants[i]['name'])
@@ -270,6 +340,11 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv
             temp.append(elem)
     extra_picks = temp
 
+    # evaluate recommender
+    rel_all = getRelevantRestaurants(restaurants,minStars,minRev)
+    AP,AR = evaluate(rel,k,rel_all)
+    #print('There are ' + str(sum(rel)) + ' relevant restaurants that are recommended out of ' + str(len(rel)) + ' candidate restaurants')
+
     if write2csv:
     # writing to csv file
         if quick_rec:
@@ -287,4 +362,4 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,write2csv
             # writing the data rows
             csvwriter.writerows(picks)
 
-    return likes, neutral, dislikes, picks, extra_picks, user_profile, att_plus, att_minus
+    return AP, AR, likes, neutral, dislikes, picks, extra_picks, user_profile, att_plus, att_minus
