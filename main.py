@@ -96,7 +96,8 @@ if runCBrec:
         print('MAR = ', MAR)
         print('MAF1 = ', 2*MAP*MAR/(MAP+MAR))
     print('====================END CONTENT-BASED RECOMMENDER==================================')
-x2 = cf_item.recommend(users,restaurants,reviews)
+x2_business_id = "-dMuB2gJ2z3wdatazYNu4g"
+x2 = cf_item.recommend(x2_business_id,reviews) #Example
 x3 = cf_user.recommend(uid,reviews)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)
 x5 = svd4rec.recommend(users,restaurants,reviews)
