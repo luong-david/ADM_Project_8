@@ -55,36 +55,38 @@ for r in restaurants:
     rest_list.append(r['business_id'])
 
 # flags
-runCBrec = 0
+runCBrec = 1
+
+# Relevance criteria
+minStars = 4.0
+minRev = 100
 
 # Advanced Data Mining Studies
 
 if runCBrec:
     print('====================START CONTENT-BASED RECOMMENDER================================')
-    uid, quick_rec, top_k, extra_recs, minStars, minRev, compute_metrics, write2csv = content_recommender.prompt(user_list)
-    AP,AR, likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
+    uid, quick_rec, top_N, extra_recs, compute_metrics, write2csv = content_recommender.prompt(user_list,users)
+    AP,AR, likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
     print('You liked: ' + str(likes))
     print('You disliked: ' + str(dislikes))
-    print('Your Top k: ')
+    print('Your Top N: ')
     print(picks)
     print('Your Extra Quick Picks: ')
     print(extra_picks)
-    print('Your Last k: ')
-    print(picks[:-int(top_k)-1:-1])
     print('You prefer these attributes: ')
     print(att_plus)
     print('You don\'t care for these attributes: ')
     print(att_minus)
-    print('Average Precision @ k = ', AP)
-    print('Average Recall @ k = ', AR)
+    print('Average Precision @ 3 = ', AP)
+    print('Average Recall @ 3 = ', AR)
     if compute_metrics:
         AP_list = []
         AR_list = []
         for i,user in enumerate(user_list):
-            AP,AR,likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(user,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
+            AP,AR,likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(user,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv)
             AP_list.append(AP)
             AR_list.append(AR)
-            print('User ' + str(i+1) + '/' + str(len(user_list)) + ': Average Precision/Recall @ k = ' + str(AP) + '/' + str(AR))
+            print('User ' + str(i+1) + '/' + str(len(user_list)) + ': Average Precision/Recall @ 3 = ' + str(AP) + '/' + str(AR))
         print('For ' + str(i+1) + ' out of ' + str(len(user_list)) + ' users: ')
 
         # Compute metrics

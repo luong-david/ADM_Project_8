@@ -152,13 +152,16 @@ def LSH(users,restaurants,reviews):
 
     return buckets
 
-def evaluate(rel,k,rel_all):
-    # function to compute average precision
-    AP = sum(rel[0:k])/k
-    if sum(rel_all) == 0:
-        AR = 0
-    else:
-        AR = sum(rel[0:k])/sum(rel_all)
+def evaluate(rel,N):
+    # function to compute average precision/recall at k=3
+    AP = 0
+    AR = 0
+    for k in range(3):
+        AP += sum(rel[0:k])/(k+1)
+        if sum(rel[0:N]) == 0:
+            AR = 0
+        else:
+            AR += sum(rel[0:k])/sum(rel[0:N])
     return AP,AR
 
 def getRelevantRestaurants(restaurants,minStars,minRev):
@@ -170,7 +173,7 @@ def getRelevantRestaurants(restaurants,minStars,minRev):
             rel.append(0)
     return rel
 
-def get_user_information():
+def get_user_information(users):
     uid = input("Enter your user id (use 0 for test user or -1 for random): ")
     if uid == '0':
         uid = '-OGWTHZng0QNhvc8dhIjyQ'
@@ -178,10 +181,10 @@ def get_user_information():
         uid = users[random.randrange(0,len(users))]['user_id']
     return uid
 
-def prompt(user_list):
+def prompt(user_list,users):
 
     # Get user information
-    uid = get_user_information()
+    uid = get_user_information(users)
 
     # Inputs
     while 1:
@@ -195,7 +198,9 @@ def prompt(user_list):
     quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
     while quick_rec != '1' and quick_rec != '0':
         quick_rec = input("I did not understand your input, enter 1 for quick recommendation, 0 to examine all restaurants: ")
-    top_k = input("How many recs do you want? ")
+    top_N = input("How many recs do you want? Enter at least 3. ")
+    while(int(top_N)) < 3:
+        top_N = input("Please try again, enter a number greater than or equal to 3.")
     if int(quick_rec):
         extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
         while extra_recs != '1' and extra_recs != '0':
@@ -211,16 +216,12 @@ def prompt(user_list):
     while write2csv != '1' and write2csv != '0':
         write2csv = input("I did not understand your input, enter 1 to write recs to csv, 0 to skip: ")
 
-    # Relevance criteria
-    minStars = 4.0
-    minRev = 100
+    return uid, quick_rec, top_N, extra_recs, int(compute_metrics), int(write2csv)
 
-    return uid, quick_rec, top_k, extra_recs, minStars, minRev, int(compute_metrics), int(write2csv)
-
-def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv):
+def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv):
 
     # ensure correct types
-    k = int(top_k) # top-k recs
+    N = int(top_N) # top-N recs
     quick_rec = int(quick_rec)
 
     # remove restaurants without any attributes
@@ -305,7 +306,7 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,
     neutral = []
     rel = []
     for i,item in enumerate(sim):
-        if i < k:
+        if i < N:
             picks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
         if float(restaurants[item[0]]['stars']) >= minStars and int(restaurants[item[0]]['review_count']) >= minRev:
             rel.append(1)
@@ -330,7 +331,7 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,
 
     extra_picks = []
     if extra_recs:
-        for kk in range(min(k,len(cand_pairs))):
+        for kk in range(min(N,len(cand_pairs))):
             if sim[kk][0] in cand_pairs:
                 extra_picks.append([restaurants[buckets[sim[kk][0]][0]]['name'] + ' on ' + restaurants[buckets[sim[kk][0]][0]]['address'],sim[kk][1]])
     # remove duplicates
@@ -342,7 +343,7 @@ def recommend(uid,quick_rec,top_k,extra_recs,users,restaurants,reviews,minStars,
 
     # evaluate recommender
     rel_all = getRelevantRestaurants(restaurants,minStars,minRev)
-    AP,AR = evaluate(rel,k,rel_all)
+    AP,AR = evaluate(rel,N)
     #print('There are ' + str(sum(rel)) + ' relevant restaurants that are recommended out of ' + str(len(rel)) + ' candidate restaurants')
 
     if write2csv:
