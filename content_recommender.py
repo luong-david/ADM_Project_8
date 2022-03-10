@@ -121,7 +121,7 @@ def collect_candidate_pairs(mat,mat_sig,nBands,nRows,s):
                                 if item not in final_result:
                                     result.append(item)
                 else:
-                    if band_compare(mat_sig[start:end,cp_idx[0]],mat[start:end,cp_idx[1]]) == 1:
+                    if band_compare(mat_sig[start:end,cp_idx[0]],mat_sig[start:end,cp_idx[1]]) == 1:
                         sim_score = jaccard_similarity(mat[:,cp_idx[0]],mat[:,cp_idx[1]])
                         if sim_score >= s:
                             item = [cp_idx,sim_score]
@@ -152,16 +152,16 @@ def LSH(users,restaurants,reviews):
 
     return buckets
 
-def evaluate(rel,N):
-    # function to compute average precision/recall at k=3
+def evaluate(rel,N,k):
+    # function to compute average precision/recall at k
     AP = 0
     AR = 0
-    for k in range(3):
-        AP += sum(rel[0:k])/(k+1)
+    for kk in range(k):
+        AP += sum(rel[0:kk+1])*rel[kk]/(kk+1)/k
         if sum(rel[0:N]) == 0:
             AR = 0
         else:
-            AR += sum(rel[0:k])/sum(rel[0:N])
+            AR += sum(rel[0:kk+1])*rel[kk]/sum(rel[0:N])/k
     return AP,AR
 
 def getRelevantRestaurants(restaurants,minStars,minRev):
@@ -181,7 +181,7 @@ def get_user_information(users):
         uid = users[random.randrange(0,len(users))]['user_id']
     return uid
 
-def prompt(user_list,users):
+def prompt(user_list,users,restaurants,reviews,k):
 
     # Get user information
     uid = get_user_information(users)
@@ -198,9 +198,9 @@ def prompt(user_list,users):
     quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
     while quick_rec != '1' and quick_rec != '0':
         quick_rec = input("I did not understand your input, enter 1 for quick recommendation, 0 to examine all restaurants: ")
-    top_N = input("How many recs do you want? Enter at least 3. ")
+    top_N = input("How many recs do you want? Enter at least " + str(k) + " : ")
     while(int(top_N)) < 3:
-        top_N = input("Please try again, enter a number greater than or equal to 3.")
+        top_N = input("Please try again, enter a number greater than or equal to " + str(k) + " ")
     if int(quick_rec):
         extra_recs = input("May I suggest more recs for you similar to the top-k? (1=yes,0=no) ")
         while extra_recs != '1' and extra_recs != '0':
@@ -216,9 +216,16 @@ def prompt(user_list,users):
     while write2csv != '1' and write2csv != '0':
         write2csv = input("I did not understand your input, enter 1 to write recs to csv, 0 to skip: ")
 
-    return uid, quick_rec, top_N, extra_recs, int(compute_metrics), int(write2csv)
+    if int(quick_rec):
+        buckets = LSH(users,restaurants,reviews)
+        cand_pairs = buckets.keys()
+    else:
+        buckets = []
+        cand_pairs = []
 
-def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,write2csv):
+    return uid, quick_rec, top_N, int(extra_recs), int(compute_metrics), int(write2csv), buckets, cand_pairs
+
+def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,k,buckets,cand_pairs,write2csv):
 
     # ensure correct types
     N = int(top_N) # top-N recs
@@ -284,10 +291,7 @@ def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,
     # 3. Recommend top-k restaurants
     # Note: since nRestaurants may be small, allow the option to compute similarity between user profile and all restaurants.
 
-    if quick_rec: # perform LSH to obtain candidate pairs
-        buckets = LSH(users,restaurants,reviews)
-        cand_pairs = buckets.keys()
-    else: # all restaurants are candidate pairs with user profile
+    if not quick_rec: # all restaurants are candidate pairs with user profile
         cand_pairs = range(nRestaurants)
 
     sim = []
@@ -343,7 +347,7 @@ def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,
 
     # evaluate recommender
     rel_all = getRelevantRestaurants(restaurants,minStars,minRev)
-    AP,AR = evaluate(rel,N)
+    AP,AR = evaluate(rel,N,k)
     #print('There are ' + str(sum(rel)) + ' relevant restaurants that are recommended out of ' + str(len(rel)) + ' candidate restaurants')
 
     if write2csv:
