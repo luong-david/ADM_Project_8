@@ -113,8 +113,8 @@ if runCBrec:
             print('kmean =', sum(k_list)/len(k_list))
             print('Number of times Full method was used:',nFull)
     print('====================END CONTENT-BASED RECOMMENDER==================================')
-x2_business_id = "-dMuB2gJ2z3wdatazYNu4g"
-x2 = cf_item.recommend(x2_business_id,reviews) #Example
+x2_business_id = "pCNH6bRbyAR7vhaIKoFCxQ"
+x2 = cf_item.recommend(uid, x2_business_id,reviews) #Example
 x3 = cf_user.recommend(uid,reviews)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)
 x5 = svd4rec.recommend(users,restaurants,reviews)
