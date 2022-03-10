@@ -1,4 +1,4 @@
-from scipy.sparse import csr_matrix
+from scipy.sparse import csr_matrix, vstack
 import numpy as np
 import random
 from random import randint
@@ -31,7 +31,20 @@ def jaccard_similarity(x,y):
     """A function for finding the similarity between two binary vectors"""
     intersection = np.logical_and(x, y)
     union = np.logical_or(x, y)
-    similarity = intersection.sum() / float(union.sum())
+    if union.sum() == 0:
+        similarity = 0
+    else:
+        similarity = intersection.sum() / float(union.sum())
+    return similarity
+
+def cosine_similarity(x,y):
+    """A function for finding the similarity between two non-binary vectors"""
+    num = np.dot(x,y)
+    den = np.linalg.norm(x,ord=2)*np.linalg.norm(y,ord=2)
+    if den == 0:
+        similarity = 0
+    else:
+        similarity = num/den
     return similarity
 
 def build_characteristic_matrix(users,restaurants,reviews):
@@ -96,13 +109,13 @@ def build_signature_matrix(mat,nBands,nRows):
         nR+=1
     return mat_sig
 
-def collect_candidate_pairs(mat,mat_sig,nBands,nRows,s):
+def collect_candidate_pairs1(mat,mat_sig,nBands,nRows,s):
     final_result = []
 
     for b in range(nBands):
         mydict = {}
         result = []
-        print('Finding candidate pairs in band ' + str(b+1) + ' of ' + str(nBands))
+        print('LSHv1: Finding candidate pairs in band ' + str(b+1) + ' of ' + str(nBands))
         start = b*nRows+1
         end = nRows*(b+1)+1
         for j in range(mat_sig.shape[1]):
@@ -129,18 +142,52 @@ def collect_candidate_pairs(mat,mat_sig,nBands,nRows,s):
                                 result.append(item)
         final_result = final_result + result
     
-    print('Found ' + str(len(final_result)) + ' candidate pairs above or equal to threshold ' + str(s))
+    print('LSHv1: Found ' + str(len(final_result)) + ' candidate pairs above or equal to threshold ' + str(s))
     return final_result
 
-def LSH(users,restaurants,reviews):
-    # Parameters
-    s = 0.25 # similarity threshold
-    nBands = 2
-    nRows = 2
+def collect_candidate_pairs2(mat_sig,nBands,nRows,s):
+    final_result = []
+
+    for b in range(nBands):
+        mydict = {}
+        result = []
+        print('LSHv2: Finding candidate pairs in band ' + str(b+1) + ' of ' + str(nBands))
+        start = b*nRows+1
+        end = nRows*(b+1)+1
+        for j in range(mat_sig.shape[1]):
+            mydict.setdefault(hash(tuple(mat_sig[start:end,j])), []).append(j)
+
+        for key in mydict.keys():
+            cp_idx = mydict[key]
+            if 0 in cp_idx:
+                if len(cp_idx) > 1:
+                    if len(cp_idx) > 2:
+                        comb = combinations(cp_idx,2)
+                        for c in list(comb):
+                            if c[0]==0:
+                                if band_compare(mat_sig[start:end,c[0]],mat_sig[start:end,c[1]]) == 1:
+                                    sim_score = cosine_similarity(mat_sig[:,c[0]],mat_sig[:,c[1]])
+                                    if sim_score >= s:
+                                        item = [[c[0],c[1]],sim_score]
+                                        if item not in final_result:
+                                            result.append(item)
+                    else:
+                        if band_compare(mat_sig[start:end,cp_idx[0]],mat_sig[start:end,cp_idx[1]]) == 1:
+                            sim_score = cosine_similarity(mat_sig[:,cp_idx[0]],mat_sig[:,cp_idx[1]])
+                            if sim_score >= s:
+                                item = [cp_idx,sim_score]
+                                if item not in final_result:
+                                    result.append(item)
+        final_result = final_result + result
+    
+    print('LSHv2: Found ' + str(len(final_result)) + ' candidate pairs above or equal to threshold ' + str(s))
+    return final_result
+
+def LSH1(users,restaurants,reviews,nBands,nRows,s):
 
     mat,map = build_characteristic_matrix(users,restaurants,reviews)
     mat_sig = build_signature_matrix(mat,nBands,nRows)
-    final_result = collect_candidate_pairs(mat,mat_sig,nBands,nRows,s)
+    final_result = collect_candidate_pairs1(mat,mat_sig,nBands,nRows,s)
 
     # get buckets of restaurants with original restaurant indices using map
     buckets = {}
@@ -152,6 +199,18 @@ def LSH(users,restaurants,reviews):
 
     return buckets
 
+def LSH2(C,nBand,nRow,s):
+    final_result = collect_candidate_pairs2(C,nBand,nRow,s)
+    # get buckets of restaurant profiles with original restaurant indices (-1 offset)
+    # bucket "0" is user profile
+    buckets = {}
+    for cp in final_result:
+        if cp[0][0]-1 in buckets.keys():
+            buckets[cp[0][0]-1].append(cp[0][1]-1)
+        else:
+            buckets[cp[0][0]-1] = [cp[0][1]-1]
+    return buckets
+
 def evaluate(rel,N,k):
     # function to compute average precision/recall at k
     AP = 0
@@ -161,7 +220,7 @@ def evaluate(rel,N,k):
         if sum(rel[0:N]) == 0:
             AR = 0
         else:
-            AR += sum(rel[0:kk+1])*rel[kk]/sum(rel[0:N])/k
+            AR += sum(rel[0:kk+1])*rel[kk]/sum(rel[0:N])/(kk+1)
     return AP,AR
 
 def getRelevantRestaurants(restaurants,minStars,minRev):
@@ -181,7 +240,7 @@ def get_user_information(users):
         uid = users[random.randrange(0,len(users))]['user_id']
     return uid
 
-def prompt(user_list,users,restaurants,reviews,k):
+def prompt(user_list,users,restaurants,reviews,k,nBands,nRows,s):
 
     # Get user information
     uid = get_user_information(users)
@@ -193,7 +252,7 @@ def prompt(user_list,users,restaurants,reviews,k):
             break
         else:
             print('Invalid user id...try again')
-            uid = get_user_information()
+            uid = get_user_information(users)
 
     quick_rec = input("Enter 1 for quick recommendation, 0 to examine all restaurants: ")
     while quick_rec != '1' and quick_rec != '0':
@@ -216,16 +275,17 @@ def prompt(user_list,users,restaurants,reviews,k):
     while write2csv != '1' and write2csv != '0':
         write2csv = input("I did not understand your input, enter 1 to write recs to csv, 0 to skip: ")
 
-    if int(quick_rec):
-        buckets = LSH(users,restaurants,reviews)
-        cand_pairs = buckets.keys()
-    else:
-        buckets = []
-        cand_pairs = []
+    # Obsolete
+#    if int(quick_rec):
+#        buckets = LSH1(users,restaurants,reviews,nBands,nRows,s)
+#        cand_pairs = buckets.keys()
+#    else:
+#        buckets = []
+#        cand_pairs = []
 
-    return uid, quick_rec, top_N, int(extra_recs), int(compute_metrics), int(write2csv), buckets, cand_pairs
+    return uid, int(quick_rec), top_N, int(extra_recs), int(compute_metrics), int(write2csv)
 
-def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,k,buckets,cand_pairs,write2csv):
+def recommend(uid,quick_rec,top_N,extra_recs,restaurants,reviews,minStars,minRev,k,nBands,nRows,s,write2csv):
 
     # ensure correct types
     N = int(top_N) # top-N recs
@@ -285,25 +345,48 @@ def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,
     # generate user profile from user ratings
     user_profile = np.dot(user,mat_norm)
 
-    # Find similar restaurants to user profile (LSH)
-    # 1. Create signature matrix with user profile and item profile
-    # 2. Compute similarity between candidate pairs in the bucket containing the user profile
+    if quick_rec:
+        # Find similar restaurants to user profile (LSH)
+        # 1. Create signature matrix with user profile and item profile
+        A = csr_matrix(user_profile)
+        B = mat_norm
+        C = vstack([A,B]).toarray().transpose() # features x (user+restaurants)
+        # 2. Compute similarity between candidate pairs in the bucket containing the user profile
+        buckets = LSH2(C,nBands,nRows,s)
+
+        if -1 in buckets.keys():
+            cand_pairs = buckets[-1]
+            used_full = 0
+        else:
+            print('WARNING: LSH2 did not find similar restaurant profiles to user profile...using full rec instead')
+            cand_pairs = range(nRestaurants)
+            used_full = 1
+
     # 3. Recommend top-k restaurants
     # Note: since nRestaurants may be small, allow the option to compute similarity between user profile and all restaurants.
 
-    if not quick_rec: # all restaurants are candidate pairs with user profile
+    else: # all restaurants are candidate pairs with user profile
         cand_pairs = range(nRestaurants)
+        used_full = 1
+
+    if N > len(cand_pairs):
+        print('WARNING: Fewer than',N, 'requested recs:', len(cand_pairs), 'restaurant candidates')
+        N = len(cand_pairs)
+        k = N
 
     sim = []
     for nR in cand_pairs:
-        cos_sim = np.dot(user_profile,mat_norm[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat_norm[nR,:],ord=2)
+        if np.linalg.norm(user_profile,ord=2)==0 or np.linalg.norm(mat_norm[nR,:],ord=2)==0:
+            cos_sim = 0
+        else:
+            cos_sim = np.dot(user_profile,mat_norm[nR,:])/np.linalg.norm(user_profile,ord=2)/np.linalg.norm(mat_norm[nR,:],ord=2)
         if math.isnan(cos_sim):
             # Mark restaurants that have all attributes = False
             cos_sim = -99
         sim.append((nR,cos_sim))
     sim.sort(key=lambda x:x[1],reverse=True)
 
-    # recommend top-k and bottom-k restaurants (and restaurants user has previously rated...k of each rating)
+    # recommend top-k restaurants (and restaurants user has previously rated...k of each rating)
     picks = []
     likes = []
     dislikes = []
@@ -312,7 +395,7 @@ def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,
     for i,item in enumerate(sim):
         if i < N:
             picks.append([restaurants[item[0]]['name'] + ' on ' + restaurants[item[0]]['address'],item[1]])
-        if float(restaurants[item[0]]['stars']) >= minStars and int(restaurants[item[0]]['review_count']) >= minRev:
+        if item[1] > s:
             rel.append(1)
         else:
             rel.append(0)
@@ -367,4 +450,4 @@ def recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,
             # writing the data rows
             csvwriter.writerows(picks)
 
-    return AP, AR, likes, neutral, dislikes, picks, extra_picks, user_profile, att_plus, att_minus
+    return AP, AR, likes, neutral, dislikes, picks, extra_picks, user_profile, att_plus, att_minus, N, k, used_full
