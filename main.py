@@ -61,16 +61,19 @@ runCBrec = 1
 minStars = 4.0
 minRev = 100
 k = 10
+s = 0.8 # similarity threshold for LSH
+nBands = 10
+nRows = 2
 
 # Advanced Data Mining Studies
 
 if runCBrec:
     print('====================START CONTENT-BASED RECOMMENDER================================')
-    uid, quick_rec, top_N, extra_recs, compute_metrics, write2csv, buckets, cand_pairs = content_recommender.prompt(user_list,users,restaurants,reviews,k)
-    AP,AR, likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(uid,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,k,buckets,cand_pairs,write2csv)
-    print('You liked: ' + str(likes))
-    print('You disliked: ' + str(dislikes))
-    print('Your Top N: ')
+    uid, quick_rec, top_N, extra_recs, compute_metrics, write2csv = content_recommender.prompt(user_list,users,restaurants,reviews,k,nBands,nRows,s)
+    AP, AR, likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus, Nnew, knew, used_full = content_recommender.recommend(uid,quick_rec,top_N,extra_recs,restaurants,reviews,minStars,minRev,k,nBands,nRows,s,write2csv)
+    #print('You liked: ' + str(likes))
+    #print('You disliked: ' + str(dislikes))
+    print('Your Top',Nnew,':')
     print(picks)
     print('Your Extra Quick Picks: ')
     print(extra_picks)
@@ -78,25 +81,37 @@ if runCBrec:
     print(att_plus)
     print('You don\'t care for these attributes: ')
     print(att_minus)
-    print('Average Precision @  ', str(k), ' : ', AP)
-    print('Average Recall @  ', str(k), ' : ', AR)
-    print('Average F1 Score @ ', str(k), ' : ', 2*AP*AR/(AP+AR))
+    print('Average Precision @', str(knew), ':', AP)
+    print('Average Recall @', str(knew), ':', AR)
+    if (AP+AR) == 0:
+        print('Average F1 Score @', str(knew), ': N/A')
+    else:
+        print('Average F1 Score @', str(knew), ':', 2*AP*AR/(AP+AR))
     if compute_metrics:
         AP_list = []
         AR_list = []
+        k_list = []
+        nFull = 0
         for i,user in enumerate(user_list):
-            AP,AR,likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus = content_recommender.recommend(user,quick_rec,top_N,extra_recs,users,restaurants,reviews,minStars,minRev,k,buckets,cand_pairs,write2csv)
+            AP,AR,likes,neutral,dislikes,picks,extra_picks,user_profile,att_plus,att_minus,Nnew,knew,used_full = content_recommender.recommend(user,quick_rec,top_N,extra_recs,restaurants,reviews,minStars,minRev,k,nBands,nRows,s,write2csv)
             AP_list.append(AP)
             AR_list.append(AR)
-            print('User ' + str(i+1) + '/' + str(len(user_list)) + ': Average Precision/Recall @ ' + str(k) + ' = ' + str(AP) + '/' + str(AR))
+            k_list.append(knew)
+            nFull+=used_full
+            print('User ID/name:',users[i]['user_id'],users[i]['name'])
+            print('User ' + str(i+1) + '/' + str(len(user_list)) + ': Average Precision/Recall @ ' + str(knew) + ' = ' + str(AP) + '/' + str(AR))
         print('For ' + str(i+1) + ' out of ' + str(len(user_list)) + ' users: ')
 
         # Compute metrics
         MAP = sum(AP_list)/len(AP_list)
         MAR = sum(AR_list)/len(AR_list)
-        print('MAP = ', MAP)
-        print('MAR = ', MAR)
-        print('MAF1 = ', 2*MAP*MAR/(MAP+MAR))
+        print('MAP @ kmean = ', MAP)
+        print('MAR @ kmean = ', MAR)
+        print('MAF1 @ kmean = ', 2*MAP*MAR/(MAP+MAR))
+
+        if quick_rec:
+            print('kmean =', sum(k_list)/len(k_list))
+            print('Number of times Full method was used:',nFull)
     print('====================END CONTENT-BASED RECOMMENDER==================================')
 x2_business_id = "-dMuB2gJ2z3wdatazYNu4g"
 x2 = cf_item.recommend(x2_business_id,reviews) #Example
