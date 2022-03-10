@@ -54,6 +54,9 @@ rest_list = []
 for r in restaurants:
     rest_list.append(r['business_id'])
 
+user_id_example = "-OGWTHZng0QNhvc8dhIjyQ" #Kevan
+item_id_example = "hpAOH8cmY5WHjnl8jGQ1dA" #1886 Cafe & Bakery
+
 # flags
 runCBrec = 1
 
@@ -113,9 +116,8 @@ if runCBrec:
             print('kmean =', sum(k_list)/len(k_list))
             print('Number of times Full method was used:',nFull)
     print('====================END CONTENT-BASED RECOMMENDER==================================')
-x2_business_id = "pCNH6bRbyAR7vhaIKoFCxQ"
-x2 = cf_item.recommend(uid, x2_business_id,reviews) #Example
-x3 = cf_user.recommend(uid,reviews)
+x2 = cf_item.recommend(user_id_example, item_id_example,reviews, restaurants)
+x3 = cf_user.recommend(user_id_example, item_id_example,reviews, users)
 x4 = latent_factor_model.recommend(users,restaurants,reviews)
 x5 = svd4rec.recommend(users,restaurants,reviews)
 x6 = clustering.recommend(users,restaurants,reviews)

@@ -2,7 +2,7 @@ import numpy as np
 import pandas as pd
 
 
-def recommend(userid_input, restaurantid_input,reviews):
+def recommend(userid_input, restaurantid_input, reviews, restaurants):
     user_input = str(userid_input)
     item_input = str(restaurantid_input)
 
@@ -36,27 +36,35 @@ def recommend(userid_input, restaurantid_input,reviews):
 
     # Get Pearson Correlation
     pivot_matrix_norm_corr = pivot_matrix_norm.T.corr(method='pearson')
-    # Remove diagonal 1's in Pearson Correlation
-    pivot_matrix_norm_corr.values[[np.arange(pivot_matrix_norm_corr.shape[0])] * 2] = 0
 
     # k Nearest Neighbors
-    k = 5
+    k = 20
     item_top_matrix = pivot_matrix_norm_corr.sort_values(by=[item_input], ascending=False)
     item_top = item_top_matrix[item_input]
 
-    top_businesses = item_top.index.values[0:k]
-    top_correlations = item_top.values[0:k]
+    top_businesses = item_top.index.values[1:k+1]
+    top_correlations = item_top.values[1:k+1]
 
     # Top Results
     print("Recommendation for other restaurants similar to restaurant: ", item_input)
 
-    for i in range(len(top_businesses)):
-        print('{0}: {1}, with similarity of {2}'.format(i, top_businesses[i], top_correlations[i]))
+    restaurant_name = []
+    for x in range(len(restaurants)):
+        for y in range(len(top_businesses)):
+            if restaurants[x]['business_id'] == top_businesses[y]:
+                restaurant_name.append(restaurants[x]['name'])
 
+    item_results_df = pd.DataFrame(data=[top_businesses, restaurant_name, top_correlations]).T
+    item_results_df.columns = ["business_id", "Restaurant", "Similarity"]
+    print(item_results_df)
 
+    #Predicted Ratings
+    user_matrix_dict = {"user_id": user_ids, 'business_id': business_ids, 'stars': stars}
+    user_matrix_df = pd.DataFrame(user_matrix_dict, columns=['user_id', 'business_id', 'stars'])
+    user_pivot_matrix = user_matrix_df.pivot_table(index=['user_id'], columns=['business_id'], values=['stars'])
 
     item_pivot_matrix_means = pivot_matrix.mean(axis=1)
-    user_pivot_matrix_means = pivot_matrix.mean(axis=1)
+    user_pivot_matrix_means = user_pivot_matrix.mean(axis=1)
     item_pivot_matrix_entiremean = np.nanmean(pivot_matrix)
 
     pred_rating = 0
@@ -68,19 +76,18 @@ def recommend(userid_input, restaurantid_input,reviews):
     b_xi = mu + b_x + b_i
 
     # Calculate predicted rating for each recommended restaurant
-    for x in range(len(item_top_businesses)):
+    for x in range(len(top_businesses)):
         for y in range(len(reviews)):
 
             # checking to see if there are other restaurants reviewed by same user
             # if it is, then calculate predicted rating
-            if bool(reviews[y]['business_id'] == item_top_businesses[x]) & bool(
+            if bool(reviews[y]['business_id'] == top_businesses[x]) & bool(
                     reviews[y]['user_id'] == user_input):
-                sim_numer.append(item_top_correlations[x] * (
-                            reviews[y]['stars'] - (mu + b_x + item_pivot_matrix_means[item_top_businesses[x]] - mu)))
-                sim_denom.append(item_top_correlations[x])
+                sim_numer.append(top_correlations[x] * (
+                            reviews[y]['stars'] - (mu + b_x + item_pivot_matrix_means[top_businesses[x]] - mu)))
+                sim_denom.append(top_correlations[x])
                 pred_rating = b_xi + (sum(sim_numer) / sum(sim_denom))
 
     print("Predicted Rating for Restaurant: ", item_input, "is ", pred_rating)
-
 
     return 0
