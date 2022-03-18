@@ -27,8 +27,6 @@ RECOMMENDERS
     
     Estimate the rating for a given restaurant based on ratings of k similar reviewers that rated the restaurant (use common practices to model local/global effects)
     
-    Evaluation metrics (MAE, MSE, RMSE, Precision/Recall, F1, ROC, Diversity, Coverage, Serendipity, Novelty, Relevancy, Top N Accuracy)
-    
 •	Item-Item Collaborative Filtering (recommend new restaurants that were also liked by the same reviewer)
     Generate the utility matrix (rows: restaurants, columns: reviewers)
     
