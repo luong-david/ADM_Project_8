@@ -15,6 +15,8 @@ RECOMMENDERS
     
     Running this model: main.py with runCBrec = 1
     
+    Evaluation metrics (MAE, MSE, RMSE, Precision/Recall, F1, ROC, Diversity, Coverage, Serendipity, Novelty, Relevancy, Top N Accuracy)
+    
     
 •	User-User Collaborative Filtering (recommend new restaurants that were also liked by like-minded reviewers)
     Generate utility matrix (rows: reviewers, columns: restaurants, values: stars)
