@@ -25,18 +25,18 @@ RECOMMENDERS
     
     Find Pearson correlation between reveiwers
     
-    Use KNN/LSH to find k similar reviewers
+    Use KNN to find k similar reviewers
     
     Estimate the rating for a given restaurant based on ratings of k similar reviewers that rated the restaurant (use common practices to model local/global effects)
     
 •	Item-Item Collaborative Filtering (recommend new restaurants that were also liked by the same reviewer)
-    Generate the utility matrix (rows: restaurants, columns: reviewers)
+    Generate the utility matrix (rows: restaurants, columns: reviewers, values: stars)
     
     Normalize ratings for each restaurant
     
     Find Pearson correlation between restaurants
     
-    Use KNN/LSH to find k similar restaurants 
+    Use KNN to find k similar restaurants 
     
     Estimate the rating for a given restaurant based on ratings of similar restaurants rated by the same reviewer (use common practices to model local/global effects)
 
