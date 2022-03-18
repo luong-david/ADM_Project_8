@@ -59,6 +59,8 @@ item_id_example = "hpAOH8cmY5WHjnl8jGQ1dA" #1886 Cafe & Bakery
 
 # flags
 runCBrec = 1
+runCFuser = 1
+runCFitem = 1
 
 # Relevance/Metrics Criteria
 minStars = 4.0
@@ -116,8 +118,15 @@ if runCBrec:
             print('kmean =', sum(k_list)/len(k_list))
             print('Number of times Full method was used:',nFull)
     print('====================END CONTENT-BASED RECOMMENDER==================================')
-x2 = cf_item.recommend(user_id_example, item_id_example,reviews, restaurants)
-x3 = cf_user.recommend(user_id_example, item_id_example,reviews, users)
-x4 = latent_factor_model.recommend(users,restaurants,reviews)
-x5 = svd4rec.recommend(users,restaurants,reviews)
-x6 = clustering.recommend(users,restaurants,reviews)
+if runCFitem:
+    print('====================START COLLABORATIVE FILTER (ITEM-ITEM) RECOMMENDER================================')
+    x2 = cf_item.recommend(user_id_example, item_id_example,reviews, restaurants)
+    print('====================END COLLABORATIVE FILTER (ITEM-ITEM) RECOMMENDER==================================')
+if runCFuser:
+    print('====================START COLLABORATIVE FILTER (USER-USER) RECOMMENDER================================')
+    x3 = cf_user.recommend(user_id_example, item_id_example,reviews, users)
+    print('====================END COLLABORATIVE FILTER (USER-USER) RECOMMENDER==================================')
+
+#x4 = latent_factor_model.recommend(users,restaurants,reviews)
+#x5 = svd4rec.recommend(users,restaurants,reviews)
+#x6 = clustering.recommend(users,restaurants,reviews)

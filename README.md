@@ -27,7 +27,9 @@ RECOMMENDERS
     
     Use KNN to find k similar reviewers
     
-    Estimate the rating for a given restaurant based on ratings of k similar reviewers that rated the restaurant (use common practices to model local/global effects)
+    Estimate the rating for a given restaurant based on ratings of k similar reviewers that rated the restaurant
+
+    Running this model: main.py with runCFuser = 1
     
 •	Item-Item Collaborative Filtering (recommend new restaurants that were also liked by the same reviewer)
     Generate the utility matrix (rows: restaurants, columns: reviewers, values: stars)
@@ -38,7 +40,9 @@ RECOMMENDERS
     
     Use KNN to find k similar restaurants 
     
-    Estimate the rating for a given restaurant based on ratings of similar restaurants rated by the same reviewer (use common practices to model local/global effects)
+    Estimate the rating for a given restaurant based on ratings of similar restaurants rated by the same reviewer
+
+    Running this model: main.py with runCFitem = 1
 
 •	Latent Factor Model (predict users' reviews for restaurants)
 
