@@ -13,9 +13,9 @@ RECOMMENDERS
     
     Make Predictions (find items closest to user profile via LSH or compare all restaurants if computationally tractable)
     
-    Running this model: main.py with runCBrec = 1
+    Running this model: main.py with runCBrec = 1, then provide the following inputs via the prompts: user_id, LSH or all_compare, number of recs desired, compute metrics for single user or all users, write2csv
     
-    Evaluation metrics (MAE, MSE, RMSE, Precision/Recall, F1, ROC, Diversity, Coverage, Serendipity, Novelty, Relevancy, Top N Accuracy)
+    Evaluation metrics (Mean Average Precision/Recall/F1)
     
     
 •	User-User Collaborative Filtering (recommend new restaurants that were also liked by like-minded reviewers)
