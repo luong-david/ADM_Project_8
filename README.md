@@ -10,6 +10,7 @@ RECOMMENDERS
     Restaurant profile features: boolean attributes
     Build User Profile
     Make Predictions (find items closest to user profile via LSH or compare all restaurants if computationally tractable)
+    Running this model: main.py with runCBrec = 1
     
 •	User-User Collaborative Filtering (recommend new restaurants that were also liked by like-minded reviewers)
     Generate utility matrix (rows: reviewers, columns: restaurants, values: stars)
